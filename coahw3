@@ -1,0 +1,98 @@
+// 추가 해야할 요소들
+// 코인
+// 점수 시스템
+// 체력 회복 시스템
+// 장애물, 비행기 모델링
+// 재시작 시스템
+
+float playerX, playerY; // 비행기 
+int lives = 5;                // 초기 목숨(일단 5개)
+
+int obs = 8;                    // 장애물 개수
+float[] x = new float[obs];      // 장애물 x좌표
+float[] y = new float[obs];      // 장애물 y좌표
+float[] d = new float[obs];      // 장애물 x축 방향 이동 속도
+float speed = 5.0;              // 장애물 y축 기본 속도
+float size = 50;              // 장애물 크기(장애물 모델링 바뀌면 이 변수는 아마 못쓸듯)
+
+void setup() {
+  size(600, 800);
+  
+  // 비행기 초기 위치 세팅값
+  playerX = width / 2;
+  playerY = height - 100;
+  
+  // 장애물 초기 위치와 이동 로직 (바뀌어도 됨)
+  for (int i = 0; i < obs; i +=1) {
+    x[i] = random(0, width);
+    y[i] = random(-height, 0); // 화면 위쪽에서 시작
+    d[i] = random(-5, 5);      // x축 방향으로 랜덤하게 이동
+  }
+}
+
+void draw() {
+  background(150, 200, 250); // 배경색
+  
+  // 게임 종료(목숨이 0이면 return으로 draw 중지)
+  if (lives == 0) {
+    fill(255, 0, 0);
+    textSize(50);
+    text("GAME OVER", width/2 - 140, height/2);
+    return;
+  }
+
+  // 10초 마다 1.2배 빨라짐 (10초는 600프레임)
+  if (frameCount % 600 == 0) {
+    speed *= 1.2;
+  }
+  
+  // 비행기 조작 (a는 왼쪽, d는 오른쪽)
+  if (keyPressed & (key == 'a') & playerX > 5) {
+    playerX -= 5;
+  }
+  if (keyPressed & (key == 'd') & playerX < width - 45) {
+    playerX += 5;
+  }
+
+  //비행기 모델링 (일단 정사각형)
+  fill(100, 200, 255);
+  rect(playerX, playerY, 40, 40);
+
+  // 장애물 로직(고치지 말것)
+  for (int i = 0; i < obs; i +=1) {
+    y[i] += speed; 
+    x[i] += d[i];
+    
+     // 장애물 모델링 (일단 정삼각형)
+    fill(255, 100, 100);
+    triangle(x[i], y[i], x[i] - size/2, y[i] + size, x[i] + size/2, y[i] + size);
+    
+    // 화면 아래로 나갔을 때 화면 위에서 다시 내려옴
+    if (y[i] > height) {
+      y[i] = 0;
+      x[i] = random(0, width);
+      d[i] = random(-5, 5);
+    }
+    
+    // x축 화면 밖으로 나가는 것 방지(장애물 이동 로직 바뀌면 코드 수정 필요)
+    if (x[i] < 0 | x[i] > width) {
+      d[i] *= -1; //x축 이동 방향 반대로 
+    }
+    
+    // 충돌 감지(비행기 모델링 바뀌면 +40부분을 다른 적당한 숫자로 바꿔야함)
+    if (x[i] + size/2 > playerX & x[i] - size/2 < playerX + 40 &
+        y[i] + size > playerY & y[i] < playerY + 40) {
+      
+      lives -= 1;
+      
+      // 연속 충돌 방지 코드(고치지 말것)
+      y[i] = 0;
+      x[i] = random(0, width);
+    }
+  }
+
+  // UI
+  fill(0); // (여기에다가 코인 먹은 개수 띄워야함)
+  textSize(20);
+  text("LIVES: " + lives, 20, 40);
+  text("TIME: " + (frameCount / 60) + "s", 20, 70);
