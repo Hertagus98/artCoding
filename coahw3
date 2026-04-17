@@ -84,7 +84,7 @@ void draw() {
   // 몸체 
   fill(30, 144, 255); 
   rect(playerX - 10, playerY - 10, 20, 30);
-  triangle(playerX - 10, playerY - 10, playerX + 10, playerY - 10, playerX, playerY - 25); // 앞코 삼각형
+  triangle(playerX - 10, playerY - 10, playerX + 10, playerY - 10, playerX, playerY - 25);
 
   // 조종실
   fill(180, 240, 255);
