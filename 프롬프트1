@@ -1,0 +1,73 @@
+int gameState = 0; // 0:타이틀, 1:플레이, 2:게임오버
+Player player;
+ArrayList<Bullet> bullets;
+ArrayList<Enemy> enemies;
+
+void setup() {
+  size(600, 800);
+  initGame();
+}
+
+void initGame() {
+  player = new Player();
+  bullets = new ArrayList<Bullet>();
+  enemies = new ArrayList<Enemy>();
+}
+
+void draw() {
+  background(10);
+  if (gameState == 0) {
+    textAlign(CENTER); fill(255, 255, 0); textSize(40);
+    text("종강을 향해 쏴라", width/2, height/2);
+    fill(255); textSize(20); text("Press SPACE", width/2, height/2 + 50);
+  } else if (gameState == 1) {
+    if (frameCount % 10 == 0) bullets.add(new Bullet(player.x, player.y));
+    if (frameCount % 40 == 0) enemies.add(new Enemy());
+    
+    player.update(); player.display();
+    
+    for (int i = bullets.size()-1; i >= 0; i--) {
+      Bullet b = bullets.get(i); b.update(); b.display();
+      for (int j = enemies.size()-1; j >= 0; j--) {
+        Enemy e = enemies.get(j);
+        if (dist(b.x, b.y, e.x, e.y) < 20) { bullets.remove(i); enemies.remove(j); break; }
+      }
+    }
+    
+    for (int i = enemies.size()-1; i >= 0; i--) {
+      Enemy e = enemies.get(i); e.update(); e.display();
+      if (!player.isInvincible && dist(player.x, player.y, e.x, e.y) < 25) {
+        player.lives--; player.isInvincible = true; player.invincTimer = 60;
+        if (player.lives <= 0) gameState = 2;
+      }
+    }
+    fill(255,0,0); textSize(20); textAlign(LEFT); text("LIVES: " + player.lives, 20, 30);
+  } else if (gameState == 2) {
+    textAlign(CENTER); fill(255, 0, 0); textSize(40);
+    text("GAME OVER", width/2, height/2);
+    fill(255); textSize(20); text("Press SPACE to Retry", width/2, height/2 + 50);
+  }
+}
+
+void keyPressed() {
+  if (key == ' ' && (gameState == 0 || gameState == 2)) { initGame(); gameState = 1; }
+}
+
+class Player {
+  float x = width/2, y = height - 100;
+  int lives = 5, invincTimer = 0;
+  boolean isInvincible = false;
+  void update() {
+    if (keyPressed && key == CODED) {
+      if (keyCode == UP) y -= 5; if (keyCode == DOWN) y += 5;
+      if (keyCode == LEFT) x -= 5; if (keyCode == RIGHT) x += 5;
+    }
+    if (isInvincible) { invincTimer--; if (invincTimer <= 0) isInvincible = false; }
+  }
+  void display() {
+    if (!isInvincible || frameCount % 10 < 5) { fill(0, 200, 255); rect(x-10, y-10, 20, 30); }
+  }
+}
+
+class Bullet { float x, y; Bullet(float tx, float ty) { x = tx; y = ty; } void update() { y -= 10; } void display() { fill(255, 255, 0); ellipse(x, y, 5, 10); } }
+class Enemy { float x = random(50, width-50), y = -20; void update() { y += 3; } void display() { fill(255, 100, 100); ellipse(x, y, 30, 30); } }
