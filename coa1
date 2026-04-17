@@ -1,10 +1,12 @@
+import java.util.ArrayList;
+
+// --- 전역 변수 설정 ---
 ArrayList<Bullet> bullets;
 ArrayList<Enemy> enemies;
 ArrayList<Star> stars; 
-ArrayList<Planet> planets; // 고퀄리티 행성들을 위한 리스트
+ArrayList<Planet> planets; 
 Player player;
 
-// 게임 시스템 변수
 int killCount = 0;
 int[] milestones = {10, 22, 36, 42, 60, 80, 100}; 
 int milestoneIndex = 0;
@@ -16,26 +18,22 @@ ArrayList<String> activeEffects = new ArrayList<String>();
 
 void setup() {
   size(600, 800);
-  player = new Player(5); // 초기 목숨 5개로 플레이어 생성
+  player = new Player(5); 
   bullets = new ArrayList<Bullet>();
   enemies = new ArrayList<Enemy>();
   stars = new ArrayList<Star>();
   planets = new ArrayList<Planet>();
   
-  // 1. 우주 배경 초기화: 별 생성
+  // 1. 별 배경 초기화
   for (int i = 0; i < 150; i++) stars.add(new Star());
   
-  // 2. 고퀄리티 태양계 주요 행성 생성 (크기, 색상, 위치, 속도)
-  // Sun: 고정 상단 배치, 코로나 효과
-  planets.add(new Planet(width/2, -150, 200, color(255, 200, 0), 0.1, PlanetType.SUN)); 
+  // 2. 태양계 주요 행성 생성 (초기 위치 분산)
+  planets.add(new Planet(width/2, -200, 220, color(255, 200, 0), 0.1, PlanetType.SUN)); 
   planets.add(new Planet(random(width), random(-height, 0), 20, color(180, 180, 180), 0.3, PlanetType.MERCURY)); 
   planets.add(new Planet(random(width), random(-height, 0), 40, color(230, 210, 170), 0.25, PlanetType.VENUS)); 
-  // Earth: 구름, 대륙 패턴
   planets.add(new Planet(random(width), random(-height, 0), 45, color(50, 100, 255), 0.22, PlanetType.EARTH)); 
   planets.add(new Planet(random(width), random(-height, 0), 30, color(220, 100, 50), 0.28, PlanetType.MARS)); 
-  // Jupiter: 줄무늬, 대적점
   planets.add(new Planet(random(width), random(-height, 0), 100, color(210, 150, 100), 0.15, PlanetType.JUPITER)); 
-  // Saturn: 상세한 고리
   planets.add(new Planet(random(width), random(-height, 0), 80, color(240, 230, 170), 0.18, PlanetType.SATURN)); 
   planets.add(new Planet(random(width), random(-height, 0), 60, color(150, 220, 250), 0.12, PlanetType.URANUS)); 
   planets.add(new Planet(random(width), random(-height, 0), 55, color(50, 80, 220), 0.1, PlanetType.NEPTUNE)); 
@@ -46,7 +44,7 @@ void setup() {
 }
 
 void draw() {
-  drawSpaceBackground(); // 우주 배경 렌더링
+  drawSpaceBackground(); 
 
   if (!isTypingMode) {
     updateGame();
@@ -59,15 +57,15 @@ void draw() {
 }
 
 void drawSpaceBackground() {
-  background(5, 5, 12); // 깊은 우주 색상
+  background(5, 5, 12); 
   
-  // 1. 배경 가장 멀리 있는 태양 및 행성 표시
+  // 행성 렌더링
   for (Planet p : planets) {
     p.update();
     p.display();
   }
   
-  // 2. 그 앞의 별 무리 이동 및 표시 (패럴랙스 효과)
+  // 별 렌더링 (패럴랙스)
   for (Star s : stars) {
     s.update();
     s.display();
@@ -91,7 +89,6 @@ void updateGame() {
     e.update(activeEffects);
     e.display();
     
-    // 플레이어와 충돌 체크 (장애물 역할)
     if (!player.isInvincible && e.collidesWith(player)) {
       player.takeDamage();
     }
@@ -128,14 +125,12 @@ void updateGame() {
   }
 }
 
-// --- UI 및 오버레이 ---
+// --- UI 관리 ---
 void drawUI() {
   fill(255); textSize(14); textAlign(LEFT);
   text("KILLS: " + killCount + " | STAGE: " + (milestoneIndex + 1), 20, 30);
   fill(0, 255, 200);
   text("POWERS: " + activeEffects.toString(), 20, 50);
-  
-  // 왼쪽 상단 플레이어 목숨 표시
   fill(255, 0, 0); textSize(20);
   text("LIVES: " + player.lives, 20, 80);
 }
@@ -172,26 +167,7 @@ void keyPressed() {
   }
 }
 
-// --- 클래스 ---
-
-class Star {
-  float x, y, speed, size;
-  Star() {
-    x = random(width);
-    y = random(height);
-    speed = random(2, 7); // 서로 다른 속도로 패럴랙스 효과
-    size = random(1, 3.5);
-  }
-  void update() {
-    y += speed;
-    if (y > height) { y = 0; x = random(width); }
-  }
-  void display() {
-    fill(255, random(100, 255)); // 반짝이는 효과
-    noStroke();
-    ellipse(x, y, size, size);
-  }
-}
+// --- 클래스 정의 ---
 
 enum PlanetType { SUN, MERCURY, VENUS, EARTH, MARS, JUPITER, SATURN, URANUS, NEPTUNE }
 
@@ -199,149 +175,123 @@ class Planet {
   float x, y, size, speed;
   color col;
   PlanetType type;
-  
+  long seed; // 깜빡임 방지용 고유 시드
+
   Planet(float x, float y, float size, color col, float speed, PlanetType type) {
-    this.x = x;
-    this.y = y;
-    this.size = size;
-    this.col = col;
-    this.speed = speed;
-    this.type = type;
+    this.x = x; this.y = y; this.size = size;
+    this.col = col; this.speed = speed; this.type = type;
+    this.seed = (long)random(10000);
   }
-  
+
   void update() {
-    y += speed; // 행성도 천천히 아래로 이동 (지나가는 연출)
-    if (y > height + size) { // 화면 아래로 사라지면 상단에서 재등장
-      y = -size;
+    y += speed;
+    if (y > height + size * 1.5) {
+      y = -size * 1.5;
       x = random(width);
+      seed = (long)random(10000); // 위치가 초기화될 때 패턴도 새로 생성
     }
   }
-  
+
   void display() {
     pushMatrix();
     translate(x, y);
+    randomSeed(seed); // 내부 무작위 패턴을 프레임마다 고정함
+    
     noStroke();
-    
-    // 행성 본체 그라데이션 및 질감
     drawPlanetBody();
-    
-    // 추가적인 모델링 특징
     drawPlanetFeatures();
-    
     popMatrix();
   }
-  
+
   void drawPlanetBody() {
     fill(col);
     ellipse(0, 0, size, size);
-    
-    // 미세한 그라데이션/그림자 추가 (입체감)
-    fill(0, 50); ellipse(size*0.2, size*0.2, size*0.8, size*0.8);
+    fill(0, 60); // 입체감 그림자
+    arc(0, 0, size, size, -QUARTER_PI, PI-QUARTER_PI);
   }
-  
+
   void drawPlanetFeatures() {
     switch (type) {
-      case SUN:
-        drawSunFeatures();
-        break;
-      case EARTH:
-        drawEarthFeatures();
-        break;
-      case JUPITER:
-        drawJupiterFeatures();
-        break;
-      case SATURN:
-        drawSaturnRing();
-        break;
+      case SUN:     drawSunFeatures(); break;
+      case EARTH:   drawEarthFeatures(); break;
+      case JUPITER: drawJupiterFeatures(); break;
+      case SATURN:  drawSaturnRing(); break;
     }
   }
-  
+
   void drawSunFeatures() {
-    // 코로나 효과 (불꽃 파티클)
-    for (int i = 0; i < 20; i++) {
-      float a = random(TWO_PI);
-      float d = random(size*0.5, size*0.7);
-      float px = cos(a) * d;
-      float py = sin(a) * d;
-      fill(255, random(150, 255), 0, random(100, 200));
-      ellipse(px, py, random(size*0.05, size*0.15), random(size*0.05, size*0.15));
+    // 코로나는 noise를 사용하여 부드럽게 일렁이게 함 (깜빡임 X)
+    for (int i = 0; i < 30; i++) {
+      float angle = TWO_PI / 30 * i;
+      float n = noise(i * 0.5, frameCount * 0.03);
+      float d = size * 0.45 + n * (size * 0.25);
+      float px = cos(angle) * d;
+      float py = sin(angle) * d;
+      fill(255, 100 + (n * 155), 0, 150);
+      ellipse(px, py, size * 0.1, size * 0.1);
     }
-    
-    // 내부 그라데이션
-    fill(255, 255, 100, 150); ellipse(0, 0, size*0.9, size*0.9);
-    fill(255, 255, 255, 200); ellipse(0, 0, size*0.7, size*0.7);
+    fill(255, 255, 150, 180);
+    ellipse(0, 0, size * 0.85, size * 0.85);
   }
-  
+
   void drawEarthFeatures() {
-    // 구름 층 (흰색 노이즈 패턴)
-    fill(255, 200);
+    fill(50, 180, 80); // 대륙
     for (int i = 0; i < 5; i++) {
-      ellipse(random(-size*0.4, size*0.4), random(-size*0.4, size*0.4), random(size*0.2, size*0.5), random(size*0.2, size*0.5));
+      ellipse(random(-size*0.3, size*0.3), random(-size*0.3, size*0.3), random(size*0.2, size*0.5), random(size*0.2, size*0.4));
     }
-    
-    // 대륙 패턴 (녹색 추상 타원)
-    fill(50, 150, 50);
+    fill(255, 150); // 구름 (시드 덕분에 고정됨)
     for (int i = 0; i < 3; i++) {
-      pushMatrix();
-      rotate(random(TWO_PI));
-      ellipse(random(-size*0.3, size*0.3), random(-size*0.3, size*0.3), random(size*0.3, size*0.6), random(size*0.1, size*0.3));
-      popMatrix();
+      rect(random(-size*0.3, size*0.3), random(-size*0.3, size*0.3), random(size*0.3, size*0.5), size*0.08, 5);
     }
   }
-  
+
   void drawJupiterFeatures() {
-    // 줄무늬 패턴
-    for (int i = 0; i < 10; i++) {
-      float yPos = map(i, 0, 10, -size*0.45, size*0.45);
-      float alpha = random(100, 180);
-      color bandColor = (i % 2 == 0) ? color(220, 160, 110, alpha) : color(200, 140, 90, alpha);
-      fill(bandColor);
-      rect(0, yPos, size*0.9, size*0.05);
+    for (int i = -4; i <= 4; i++) {
+      float yPos = i * (size/11.0);
+      float w = sqrt(sq(size/2) - sq(yPos)) * 1.9;
+      fill(i % 2 == 0 ? color(180, 120, 80, 150) : color(120, 80, 50, 100));
+      rect(0, yPos, w, size/12.0);
     }
-    
-    // 대적점 원
-    fill(200, 50, 50, 200); ellipse(size*0.25, size*0.1, size*0.15, size*0.15);
+    fill(180, 60, 40, 200); // 대적점
+    ellipse(size * 0.2, size * 0.1, size * 0.2, size * 0.1);
   }
-  
+
   void drawSaturnRing() {
-    // 상세한 고리 모델링 (본체 뒤와 앞으로 나누어 렌더링)
-    // 1. 본체 뒤 고리 부분
-    drawRingSection(-QUARTER_PI, QUARTER_PI);
-    
-    // 2. 본체 그리기 (상속된 drawPlanetBody() 호출)
-    fill(col); ellipse(0, 0, size, size);
-    
-    // 3. 본체 앞 고리 부분
-    drawRingSection(QUARTER_PI, QUARTER_PI + PI);
-  }
-  
-  void drawRingSection(float start, float end) {
-    stroke(200, 180, 140, 180); // 고리 색상
-    strokeWeight(size*0.05);
     noFill();
-    for (float a = start; a < end; a += 0.1) {
-      float rx = cos(a) * size * 0.8;
-      float ry = sin(a) * size * 0.2;
-      ellipse(rx, ry, size*1.6, size*0.4); 
-    }
+    strokeWeight(size * 0.08);
+    stroke(200, 180, 140, 150);
+    ellipse(0, 0, size * 1.8, size * 0.45);
+    strokeWeight(size * 0.04);
+    stroke(150, 130, 100, 100);
+    ellipse(0, 0, size * 1.6, size * 0.35);
     noStroke();
+  }
+}
+
+class Star {
+  float x, y, speed, size;
+  Star() {
+    x = random(width); y = random(height);
+    speed = random(2, 5); size = random(1, 3);
+  }
+  void update() {
+    y += speed;
+    if (y > height) { y = 0; x = random(width); }
+  }
+  void display() {
+    fill(255, random(150, 255));
+    ellipse(x, y, size, size);
   }
 }
 
 class Player {
   float x, y, vy;
-  int lives;
-  int lastFireTime = 0;
-  
-  // 무적 상태 관련 변수
+  int lives, lastFireTime = 0;
   boolean isInvincible = false;
-  int invincibilityTimer = 0;
-  int invincibilityDuration = 120; // 2초 (60fps 기준)
-  int blinkRate = 10; // 깜박임 주기 (프레임)
-  
+  int invincibilityTimer = 0, invincibilityDuration = 120, blinkRate = 10;
+
   Player(int initialLives) {
-    x = width/2;
-    y = height - 100;
+    x = width/2; y = height - 100;
     this.lives = initialLives;
   }
   
@@ -358,11 +308,7 @@ class Player {
     }
     y += vy; vy *= 0.85; 
     x = constrain(x, 25, width-25); y = constrain(y, 50, height-30);
-    
-    // 무적 상태 업데이트
-    if (isInvincible && frameCount > invincibilityTimer) {
-      isInvincible = false;
-    }
+    if (isInvincible && frameCount > invincibilityTimer) isInvincible = false;
   }
 
   void fire() {
@@ -371,46 +317,33 @@ class Player {
       if(s.equals("WIDE")) spreadBase += PI/15;
       if(s.equals("NARROW")) spreadBase = max(PI/60, spreadBase - PI/30);
     }
-    
     float angle = random(-spreadBase, spreadBase);
-    float baseSpeed = 11;
-    float baseDmg = 35; // 초기 데미지 상향 (25 -> 35)
-    
+    float baseSpeed = 11, baseDmg = 35;
     for(String s : activeEffects) {
       if(s.equals("HEAVY")) { baseDmg += 12; baseSpeed -= 0.3; vy += 0.8; }
-      if(s.equals("LIGHT")) { baseSpeed += 1.0; }
-      if(s.equals("RAZER")) { baseSpeed += 8.0; }
+      if(s.equals("LIGHT")) baseSpeed += 1.0;
+      if(s.equals("RAZER")) baseSpeed += 8.0;
     }
     bullets.add(new Bullet(x, y, angle, baseSpeed, baseDmg));
   }
   
-  // 피해 입는 메서드
   void takeDamage() {
     lives--;
-    if (lives <= 0) {
-      lives = 0;
-      // 게임 오버 로직 추가 가능
-    } else {
-      // 무적 상태 활성화
+    if (lives > 0) {
       isInvincible = true;
       invincibilityTimer = frameCount + invincibilityDuration;
     }
   }
 
   void display() {
-    // 무적 상태일 때 깜박임 효과
-    if (isInvincible && (frameCount % blinkRate) < blinkRate/2) {
-      // 그리지 않음
-    } else {
-      pushMatrix();
-      translate(x, y);
-      fill(220); noStroke();
-      rect(0, 0, 10, 45, 5); // 몸체
-      fill(180); rect(0, 5, 45, 12, 3); // 주날개
-      fill(0, 200, 255); ellipse(0, -12, 6, 12); // 조종석
-      fill(255, 150, 0, random(180, 255)); triangle(-4, 22, 4, 22, 0, 38); // 엔진 화염
-      popMatrix();
-    }
+    if (isInvincible && (frameCount % blinkRate) < blinkRate/2) return;
+    pushMatrix();
+    translate(x, y);
+    fill(220); rect(0, 0, 10, 45, 5);
+    fill(180); rect(0, 5, 45, 12, 3);
+    fill(0, 200, 255); ellipse(0, -12, 6, 12);
+    fill(255, 150, 0, random(180, 255)); triangle(-4, 22, 4, 22, 0, 38);
+    popMatrix();
   }
 }
 
@@ -423,19 +356,14 @@ class Bullet {
   }
   void update(ArrayList<String> effects) {
     x += vx; y += vy;
-    if (effects.contains("RAZER")) {
-      if (x <= 5 || x >= width-5) { vx *= -1; x = constrain(x, 6, width-6); }
-    }
+    if (effects.contains("RAZER") && (x <= 5 || x >= width-5)) { vx *= -1; x = constrain(x, 6, width-6); }
   }
   void display() {
     pushMatrix();
-    translate(x, y);
-    rotate(atan2(vx, -vy));
+    translate(x, y); rotate(atan2(vx, -vy));
     int hCount = 0;
     for(String s : activeEffects) if(s.equals("HEAVY")) hCount++;
-    float thickness = 3 + (hCount * 2.5);
-    fill(255, 255, 150);
-    rect(0, 0, thickness, 15 + dist(0, 0, vx, vy) * 0.5); 
+    fill(255, 255, 150); rect(0, 0, 3 + (hCount * 2.5), 15 + dist(0, 0, vx, vy) * 0.5); 
     popMatrix();
   }
   boolean isOffscreen() { return y < -100 || y > height+100 || x < -100 || x > width+100; }
@@ -447,21 +375,16 @@ class Enemy {
   boolean burning = false, chilled = false;
   
   Enemy(int s) {
-    stage = s;
-    x = random(50, width-50); y = -50;
+    stage = s; x = random(50, width-50); y = -50;
     vx = random(-1.5, 1.5); vy = random(1.2, 2.5) + (s * 0.2);
     maxHP = 100 + (s * 85); hp = maxHP;
   }
   
   void update(ArrayList<String> effects) {
-    int coldStack = 0; int hotStack = 0;
-    for(String s : effects) {
-      if(s.equals("COLD")) coldStack++;
-      if(s.equals("HOT")) hotStack++;
-    }
-    float speedMult = max(0.15, 1.0 - (coldStack * 0.2)); 
-    if (hotStack > 0) hp -= (hotStack * 0.25); 
-    x += vx; y += vy * speedMult;
+    int coldStack = 0, hotStack = 0;
+    for(String s : effects) { if(s.equals("COLD")) coldStack++; if(s.equals("HOT")) hotStack++; }
+    hp -= (hotStack * 0.25);
+    x += vx; y += vy * max(0.15, 1.0 - (coldStack * 0.2));
     if (x < 20 || x > width-20) vx *= -1;
   }
   
@@ -471,28 +394,18 @@ class Enemy {
     if (effects.contains("COLD")) chilled = true;
   }
   
-  // 충돌 감지 메서드 추가
-  boolean collidesWith(Player p) {
-    return dist(x, y, p.x, p.y) < 30; // 적 기체와 플레이어 기체 사이의 거리 기준
-  }
-  
+  boolean collidesWith(Player p) { return dist(x, y, p.x, p.y) < 30; }
   boolean isDead() { return hp <= 0; }
   
   void display() {
     pushMatrix();
     translate(x, y);
-    color eColor = color(255, 80, 80);
-    if (chilled) eColor = color(100, 200, 255);
+    color eColor = chilled ? color(100, 200, 255) : color(255, 80, 80);
     if (burning) eColor = lerpColor(eColor, color(255, 150, 0), 0.6);
-    fill(eColor); noStroke();
-    
+    fill(eColor);
     drawModel();
-
-    textSize(10); textAlign(CENTER);
-    if (burning) { fill(255, 100, 0); text("HOT", 0, -25); }
-    if (chilled) { fill(0, 200, 255); text("COLD", 0, burning ? -35 : -25); }
     popMatrix();
-
+    
     fill(255, 50); rect(x, y-35, 35, 4);
     fill(255, 255, 0); rect(x - (35 - (max(0, hp)/maxHP*35))/2, y-35, max(0, hp)/maxHP*35, 4);
   }
@@ -500,12 +413,9 @@ class Enemy {
   void drawModel() {
     switch(stage % 5) {
       case 0: rect(0, 0, 30, 30); break;
-      case 1: rotate(QUARTER_PI); rect(0, 0, 28, 28); break;
+      case 1: pushMatrix(); rotate(QUARTER_PI); rect(0, 0, 28, 28); popMatrix(); break;
       case 2: ellipse(0, 0, 35, 35); break;
-      case 3: 
-        beginShape(); 
-        for(float a=0; a<TWO_PI; a+=TWO_PI/6) vertex(cos(a)*20, sin(a)*20); 
-        endShape(CLOSE); break;
+      case 3: beginShape(); for(float a=0; a<TWO_PI; a+=TWO_PI/6) vertex(cos(a)*20, sin(a)*20); endShape(CLOSE); break;
       default: rect(0, 0, 40, 12); rect(0, 0, 12, 40); break;
     }
   }
