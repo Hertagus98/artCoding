@@ -1,98 +1,202 @@
-// 추가 해야할 요소들
-// 코인
-// 점수 시스템
-// 체력 회복 시스템
-// 장애물, 비행기 모델링
-// 재시작 시스템
-
-float playerX, playerY; // 비행기 
-int lives = 5;                // 초기 목숨(일단 5개)
-
-int obs = 8;                    // 장애물 개수
-float[] x = new float[obs];      // 장애물 x좌표
-float[] y = new float[obs];      // 장애물 y좌표
-float[] d = new float[obs];      // 장애물 x축 방향 이동 속도
-float speed = 5.0;              // 장애물 y축 기본 속도
-float size = 50;              // 장애물 크기(장애물 모델링 바뀌면 이 변수는 아마 못쓸듯)
+float playerX, playerY; 
+int lives = 5;  //초기 lives       
+float score = 0; // 점수
+int obs = 8;               //장애물 개수
+float[] x = new float[obs]; 
+float[] y = new float[obs]; 
+float[] d = new float[obs]; 
+float speed = 5.0;          
+float size = 50;           
+int coin_count = 3; // 화면에 동시에 나타날 코인 개수
+float[] cX = new float[coin_count];
+float[] cY = new float[coin_count];
+float[] cD = new float[coin_count];
 
 void setup() {
   size(600, 800);
   
-  // 비행기 초기 위치 세팅값
+  //비행기 초기 위치 세팅
   playerX = width / 2;
   playerY = height - 100;
   
-  // 장애물 초기 위치와 이동 로직 (바뀌어도 됨)
-  for (int i = 0; i < obs; i +=1) {
+  //장애물 세팅
+  for (int i = 0; i < obs; i += 1) {
     x[i] = random(0, width);
-    y[i] = random(-height, 0); // 화면 위쪽에서 시작
-    d[i] = random(-5, 5);      // x축 방향으로 랜덤하게 이동
+    y[i] = random(-height, 0); 
+    d[i] = random(-5, 5);      
+  }
+  //코인 세팅
+  for (int i = 0; i < coin_count; i++) {
+    cX[i] = random(0, width);
+    cY[i] = random(-height, 0);
+    cD[i] = random(-3, 3);
   }
 }
-
+  //게임 종료 로직
 void draw() {
-  background(150, 200, 250); // 배경색
-  
-  // 게임 종료(목숨이 0이면 return으로 draw 중지)
-  if (lives == 0) {
+  background(150, 200, 250); 
+  if (lives <= 0) {
     fill(255, 0, 0);
     textSize(50);
-    text("GAME OVER", width/2 - 140, height/2);
+    textAlign(CENTER, CENTER);
+    text("GAME OVER", width/2, height/2);
+    //종료화면에서 점수 표시 
+    fill(0);
+    textSize(30);
+    text("FINAL SCORE: " + int(score), width/2, height/2 + 50);
     return;
   }
-
-  // 10초 마다 1.2배 빨라짐 (10초는 600프레임)
+  // 10초마다 점수 초당 득점수 2씩 증가
+  int plus_points = frameCount / 600;
+  float points = 10 + (plus_points * 2);
+  score += points / 60.0;
+  
+  //10초마다 난이도 상승
   if (frameCount % 600 == 0) {
     speed *= 1.2;
   }
   
-  // 비행기 조작 (a는 왼쪽, d는 오른쪽)
-  if (keyPressed & (key == 'a') & playerX > 5) {
-    playerX -= 5;
+  // 조작
+  if (keyPressed & (key == 'a') & (playerX > 30)) {
+    playerX -= 7;
   }
-  if (keyPressed & (key == 'd') & playerX < width - 45) {
-    playerX += 5;
+  if (keyPressed & (key == 'd') & (playerX < width - 30)) {
+    playerX += 7;
   }
 
-  //비행기 모델링 (일단 정사각형)
-  fill(100, 200, 255);
-  rect(playerX, playerY, 40, 40);
+  //비행기 모델링 (중심: playerX, playerY)
+  stroke(0);           
+  strokeWeight(2);     
+  
+  // 엔진 화염 (본체 하단 중앙에서 뿜어져 나옴, random으로 깜빡이는 불꽃 효과 구현)
+  fill(255, 150, 0); 
+  triangle(playerX - 5, playerY + 20, playerX + 5, playerY + 20, playerX, playerY + 25 + random(10)); 
+  fill(255, 255, 0);
+  triangle(playerX - 3, playerY + 20, playerX + 3, playerY + 20, playerX, playerY + 22 + random(5));
 
-  // 장애물 로직(고치지 말것)
-  for (int i = 0; i < obs; i +=1) {
+  // 날개
+  fill(180); 
+  // 왼쪽 날개
+  triangle(playerX - 10, playerY + 5, playerX - 30, playerY + 20, playerX - 10, playerY + 20);
+  // 오른쪽 날개
+  triangle(playerX + 10, playerY + 5, playerX + 30, playerY + 20, playerX + 10, playerY + 20);
+
+  // 몸체 
+  fill(30, 144, 255); 
+  rect(playerX - 10, playerY - 10, 20, 30);
+  triangle(playerX - 10, playerY - 10, playerX + 10, playerY - 10, playerX, playerY - 25); // 앞코 삼각형
+
+  // 조종실
+  fill(180, 240, 255);
+  ellipse(playerX, playerY - 5, 12, 18);
+ 
+
+  // 장애물 로직
+  for (int i = 0; i < obs; i += 1) {
     y[i] += speed; 
     x[i] += d[i];
     
-     // 장애물 모델링 (일단 정삼각형)
-    fill(255, 100, 100);
-    triangle(x[i], y[i], x[i] - size/2, y[i] + size, x[i] + size/2, y[i] + size);
+   //장애물 모델링
+    //날개
+    stroke(0);
+    strokeWeight(1.5);
+    line(x[i], y[i], x[i] - size * 0.8, y[i] + size * 0.2); // 왼쪽 날개
+    line(x[i], y[i], x[i] + size * 0.8, y[i] + size * 0.2); // 오른쪽 날개
     
-    // 화면 아래로 나갔을 때 화면 위에서 다시 내려옴
+    // 몸체1
+    fill(50); 
+    triangle(x[i], y[i], x[i] - size * 0.3, y[i] + size * 0.6, x[i] + size * 0.3, y[i] + size * 0.6);
+    
+    // 몸체2
+    fill(220, 0, 0);
+    noStroke();
+    // 상단 삼각형
+    triangle(x[i], y[i] + size * 0.2, x[i] - size * 0.15, y[i] + size * 0.4, x[i] + size * 0.15, y[i] + size * 0.4);
+    // 하단 삼각형
+    triangle(x[i] - size * 0.15, y[i] + size * 0.4, x[i] + size * 0.15, y[i] + size * 0.4, x[i], y[i] + size * 0.6);
+     
+    //코어 
+    stroke(255, 255, 0);
+    strokeWeight(1.5);
+    noFill();
+    ellipse(x[i], y[i] + size * 0.4, size * 0.1, size * 0.1); 
+    
+    fill(255, 255, 0);
+    noStroke();
+    ellipse(x[i], y[i] + size * 0.4, size * 0.03, size * 0.03);
+   
+    
+    
+    //장애물 행동 로직
     if (y[i] > height) {
       y[i] = 0;
       x[i] = random(0, width);
       d[i] = random(-5, 5);
     }
     
-    // x축 화면 밖으로 나가는 것 방지(장애물 이동 로직 바뀌면 코드 수정 필요)
-    if (x[i] < 0 | x[i] > width) {
-      d[i] *= -1; //x축 이동 방향 반대로 
+    if (x[i] < 0 || x[i] > width) {
+      d[i] *= -1; 
     }
     
-    // 충돌 감지(비행기 모델링 바뀌면 +40부분을 다른 적당한 숫자로 바꿔야함)
-    if (x[i] + size/2 > playerX & x[i] - size/2 < playerX + 40 &
-        y[i] + size > playerY & y[i] < playerY + 40) {
-      
+    // 충돌 감지
+    if (x[i] + size/2 > playerX - 15 & x[i] - size/2 < playerX + 15 &
+        y[i] + size > playerY - 10 & y[i] < playerY + 10) {
       lives -= 1;
-      
-      // 연속 충돌 방지 코드(고치지 말것)
       y[i] = 0;
       x[i] = random(0, width);
     }
   }
+  // 코인 모델링
+for (int i = 0; i < coin_count; i+=1) {
+    cY[i] += speed * 0.8; //코인은 장애물보다 느리게 y축방향으로 이동
+    cX[i] += cD[i];
+    
+    //코인 모델링
+    stroke(218, 165, 32); 
+    strokeWeight(2);
+    fill(255, 215, 0); 
+    ellipse(cX[i], cY[i], 25, 25); 
+    noStroke();
+    fill(255, 255, 0);
+    ellipse(cX[i], cY[i], 12, 12); 
+    
+    // 코인 행동 로직
+    if (cY[i] > height) {
+      cY[i] = random(-height, 0);
+      cX[i] = random(0, width);
+      cD[i] = random(-3, 3);
+    }
+    if (cX[i] < 0 || cX[i] > width)
+    cD[i] *= -1;
+    
+    // 코인 판정
+    if (dist(cX[i], cY[i], playerX, playerY) < 30) {
+      score += (points * 5); // 5배 보너스
+      cY[i] = random(-height, 0);
+      cX[i] = random(0, width);
+    }
+  }
 
   // UI
-  fill(0); // (여기에다가 코인 먹은 개수 띄워야함)
+  
+  // 하트 표시
+  for (int i = 0; i < lives; i+=1) {
+    float heartX = 30 + (i * 35); 
+    float heartY = 30;
+    
+    noStroke();
+    fill(255, 50, 50);
+    ellipse(heartX - 6, heartY, 15, 15); 
+    ellipse(heartX + 6, heartY, 15, 15);
+    triangle(heartX - 13, heartY + 3, heartX + 13, heartY + 3, heartX, heartY + 18);
+  }
+  // 시간 표시
+  fill(0); 
   textSize(20);
-  text("LIVES: " + lives, 20, 40);
-  text("TIME: " + (frameCount / 60) + "s", 20, 70);
+  textAlign(LEFT, TOP);
+  text("TIME: " + (frameCount / 60) + "s", 20, 60);
+  // 점수 표시
+  textAlign(RIGHT, TOP);
+  text("SCORE: " + int(score), width - 20, 25);
+ 
+}
