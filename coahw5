@@ -1,0 +1,142 @@
+Player player;
+Character[] enemies;
+
+int lives = 5;
+float score = 0;
+float speed = 4.0;
+
+void setup() {
+  size(600, 800);
+  player = new Player(width/2, height-100);
+
+
+  enemies = new Character[10]; 
+  for (int i = 0; i < 5; i++) enemies[i] = new BearObstacle();
+  for (int i = 5; i < 10; i++) enemies[i] = new YBObstacle();
+}
+
+void draw() {
+  background(150, 200, 250);
+  if (lives <= 0) {
+    showGameOver();
+    return;
+  }
+  score += 1.0/60.0;
+  if (frameCount % 600 == 0) speed *= 1.2;
+  player.move();
+  player.display();
+  for (int i = 0; i < enemies.length; i++) {
+    enemies[i].update();
+    enemies[i].display();
+    enemies[i].checkCollision();
+  }
+  
+  
+  
+  
+//UI
+  fill(0); textSize(20); textAlign(LEFT, TOP);
+  text("LIVES: " + lives + "  SCORE: " + int(score), 20, 20);
+}
+
+
+
+//부모 class
+class Character {
+  float x, y, d;
+
+  Character() { reset(); }
+
+  void reset() {
+    x = random(width);
+    y = random(-height, 0);
+    d = random(-2, 2);
+  }
+
+  void update() {
+    y += speed;
+    x += d;
+    if (y > height) reset();
+    if (x < 0 || x > width) d *= -1;
+  }
+
+
+
+
+//virtual function
+  void display() {} 
+  void checkCollision() {
+    if (dist(x, y, player.x, player.y) < 40) {
+      lives--;
+      reset();
+    }
+  }
+}
+
+
+
+//Obstacle(Bear)
+class BearObstacle extends Character {
+  float size = 5;
+  void display() {
+    pushMatrix(); translate(x, y);
+    stroke(0); strokeWeight(size/4);
+    fill(80, 30, 0); circle(0, 0, 10 * size); // face
+    circle(-5 * size, -3 * size, 3 * size); circle(5 * size, -3 * size, 3 * size); // ears
+    fill(255); circle(-2 * size, -size, 3 * size); circle(2 * size, -size, 3 * size); // glasses
+    line(-size, -size, size, -size);
+    fill(0); circle(-2 * size, -size, size); circle(2 * size, -size, size);
+    fill(255, 0, 0); arc(0, 2 * size, 4 * size, 2 * size, 0, PI);
+    popMatrix();
+  }
+}
+
+
+
+
+// obstacle(YB)
+class YBObstacle extends Character {
+  float size = 6;
+  void display() {
+    pushMatrix(); translate(x, y);
+    noStroke(); fill(255, 255, 0);
+    circle(-3*size, -5*size, size*2); circle(3*size, -5*size, size*2);
+    circle(0, 0, size*10); 
+    fill(255); circle(-2*size, -1.5*size, size*2); circle(2*size, -1.5*size, size*2);
+    fill(0); circle(-2*size, -2*size, size*0.8); circle(2*size, -2*size, size*0.8);
+    fill(200, 0, 0); circle(0, 0, size*1);
+    fill(255, 100, 0); arc(0, 2*size, 5*size, 2*size, 0, PI);
+    popMatrix();
+  }
+}
+
+
+
+
+// player(doraemong)
+class Player {
+  float x, y;
+  Player(float x, float y) { this.x = x; this.y = y; }
+  void move() {
+    if (keyPressed && key == 'a' && x > 40) x -= 7;
+    if (keyPressed && key == 'd' && x < width - 40) x += 7;
+  }
+  void display() {
+    float z = 4;
+    pushMatrix(); translate(x, y);
+    noStroke(); fill(0, 150, 250); circle(0, 0, z*20); // outer
+    fill(255); circle(0, z*3, z*14); // inner
+    circle(-z*3, -z*5, z*4); circle(z*3, -z*5, z*4); // eyes
+    fill(0); circle(-z*3, -z*5, z*2); circle(z*3, -z*5, z*2);
+    fill(250, 0, 0); circle(0, -z*2, z*4); // nose
+    stroke(0); arc(0, z*3, z*10, z*10, 0, PI); // mouth
+    popMatrix();
+  }
+}
+
+
+
+void showGameOver() {
+  fill(255, 0, 0); textSize(50); textAlign(CENTER, CENTER);
+  text("GAME OVER", width/2, height/2);
+}
